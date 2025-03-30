@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Native Debug",
+      "type": "gdb",
+      "request": "attach",
+      "stopAtConnect": true,
+      "executable": "${workspaceFolder}/kernel.elf",
+      "target": "localhost:1234",
+      "remote": true,
+      "gdbpath": "gdb-multiarch",
+      // "gdbpath": "arm-none-eabi-gdb",
+      "cwd": "${workspaceRoot}",
+      "autorun": ["set substitute-path /vagrant ."]
+    }
+  ]
+}
