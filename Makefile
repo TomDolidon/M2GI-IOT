@@ -19,6 +19,7 @@ CPU=cortex-a8
 TOOLCHAIN=arm-none-eabi
 DEBUG?=yes
 BUILD=build/
+SRC=src/
 
 objs= startup.o main.o exception.o uart.o
 
@@ -59,10 +60,10 @@ endif
 #-------------------------------------------------------------------
 # Compilation Rules
 #-------------------------------------------------------------------
-$(BUILD)%.o: %.c
+$(BUILD)%.o: $(SRC)%.c | build
 	$(TOOLCHAIN)-gcc $(CFLAGS) -o $@ $<
 
-$(BUILD)%.o: %.s
+$(BUILD)%.o: $(SRC)%.s | build
 	$(TOOLCHAIN)-as $(ASFLAGS) -o $@ $<
 
 #-------------------------------------------------------------------
