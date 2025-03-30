@@ -53,26 +53,35 @@ void uart_disable(uint32_t uartno) {
   // we do not rely on interrupts
 }
 
+/**
+ * Receives a character from the given UART and stores it in the given pointer.
+ * Blocking call until a character is available in the UART's FIFO queue.
+*/
 void uart_receive(uint8_t uartno, char *pt) {
-    struct uart* uart = &uarts[uartno];
+  // Retrieve the uart struc to get the given uart adress
+  struct uart* uart = &uarts[uartno];
 
-    while (mmio_read8(uart->bar, UART_FR) & UART_RXFE)
-        ;
+  // while no characters are available (FIFO Empty, UART_RXFE == 1), infinite loop
+  while (mmio_read8(uart->bar, UART_FR) & UART_RXFE)
+      ;
 
-    *pt = (char)mmio_read8(uart->bar, UART_DR);
+  // read in the uart data register adress the character and store it at pt adress
+  *pt = (char)mmio_read8(uart->bar, UART_DR);
 }
 
 /**
- * Sends a character through the given uart, this is a blocking call
- * until the character has been sent.
- */
+ * Receives a character from the given UART and stores it in the given pointer.
+ * Blocking call until there is space in the  UART's FIFO queue
+*/
 void uart_send(uint8_t uartno, char s) {
-    struct uart* uart = &uarts[uartno];
+  struct uart* uart = &uarts[uartno];
 
-    while (mmio_read8(uart->bar, UART_FR) & UART_TXFF)
-        ;
+  // while th fifo is full (UART_TXFF == 1), infinite loop
+  while (mmio_read8(uart->bar, UART_FR) & UART_TXFF)
+      ;
 
-    mmio_write8(uart->bar,UART_DR, s);
+  // then write a character at uart data register adress
+  mmio_write8(uart->bar,UART_DR, s);
 }
 
 /**

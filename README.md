@@ -4,6 +4,8 @@ This repository contains all the content produced as part of the IoT course in t
 
 This course is an introduction to bare metal development. To do this, we will simulate a board using QEMU.
 
+You can follow the progress of the courses by viewing the reports [here](./docs/reports/)
+
 ## 🎉 Getting started
 
 ### 📀 Prerequisites
@@ -84,13 +86,13 @@ Inside GDB, connect to QEMU:
 ↳ 📂 .vscode
 ↳ 📂 docs -> contain all documentation
 ↳ 📂 src
-    ↳ 📄 exception.s
+    ↳ 📄 exception.s -> exception handling for processor
     ↳ 📄 main.c -> code entry point
-    ↳ 📄 main.h
-    ↳ 📄 startup.s
-    ↳ 📄 uart-mmio.h
-    ↳ 📄 uart.c
-    ↳ 📄 uart.h
+    ↳ 📄 main.h -> utility function to read and write at specifi address
+    ↳ 📄 startup.s -> initialize the system then call _start() in main.c
+    ↳ 📄 uart-mmio.h -> constants for using uart
+    ↳ 📄 uart.c -> uart functions
+    ↳ 📄 uart.h -> uart definitions
 ```
 
 ## 📝 Documentation
