@@ -79,7 +79,7 @@ void uart_send(uint8_t uartno, char s) {
  * This is a wrapper function, provided for simplicity,
  * it sends a C string through the given uart.
  */
-void uart_send_string(uint8_t uartno, const char *s) {
+ void uart_send_string(uint8_t uartno, const char *s) {
   while (*s != '\0') {
     uart_send(uartno, *s);
     s++;
