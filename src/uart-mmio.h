@@ -37,10 +37,14 @@
  * doc DUI0225D_versatile_application_baseboard_arm926ej_s_ug-1.pdf page 202 : it seems UART chipset is a PL011
  * doc DDI0183G-UART_PL011_r1p5_TRM.pdf p. 48
  */
-#define UART_DR 0x000 // ??? data register 
-#define UART_FR 0x018 // ??? flag register or status register 
+#define UART_DR 0x000 // data register 
+#define UART_FR 0x018 // flag register or status register 
+#define UART_IMSC 0x038 // interrupt mask set/clear register
 
 #define UART_RXFE (1 << 4)  // FIFO Empty
 #define UART_TXFF (1 << 5)  // FIFO Full
+
+#define UART_IMSC_RXIM (1 << 4) // receive interrupt mask 
+#define UART_IMSC_TXIM (1 << 5) // transmit interrupt mask
 
 #endif /* UART_MMIO_H_ */
