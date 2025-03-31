@@ -49,11 +49,9 @@ void _start(void) {
 
   vic_setup_irqs();
   vic_enable_irq(UART0_IRQ, uart_irq_handler, NULL);
-  core_enable_irqs();
-
-  for(;;){
-    core_halt();
-  } 
+  for (;;) {
+      core_halt();
+  }
 }
 
 void panic() {
