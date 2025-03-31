@@ -41,16 +41,21 @@ void uarts_init() {
   uart_init(UART2,UART2_BASE_ADDRESS);
 }
 
+/**
+ * Enables the uart receive interrupt by setting the RXIM bit 
+ * in the Interrupt Mask Set/Clear Register (UART_IMSC).
+ */
 void uart_enable(uint32_t uartno) {
   struct uart*uart = &uarts[uartno];
-  // nothing to do here, as long as
-  // we do not rely on interrupts
+  mmio_write32(uart->bar, UART_IMSC, UART_IMSC_RXIM);
 }
 
+/**
+ * Disables uart interrupts by clearing the UART_IMSC register.
+ */
 void uart_disable(uint32_t uartno) {
   struct uart*uart = &uarts[uartno];
-  // nothing to do here, as long as
-  // we do not rely on interrupts
+  mmio_write32(uart->bar, UART_IMSC, 0);
 }
 
 /**
