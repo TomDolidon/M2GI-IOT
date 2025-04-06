@@ -27,8 +27,9 @@ extern void _wfi(void);
 /*
  * Data structure for handlers and cookies
  */
-struct handler {
-  void (*callback)(uint32_t, void*);
+struct handler
+{
+  void (*callback)(uint32_t, void *);
   void *cookie;
 };
 
@@ -39,26 +40,31 @@ struct handler handlers[NIRQS];
  * Needs to interogate the VIC about the masked interrupt
  * status and call the corresponding handlers.
  */
-void isr() {
-    core_disable_irqs();
-    const uint32_t irqs = mmio_read32((void *) VIC_BASE_ADDR, VICIRQSTATUS);;
-    for (uint32_t i = 0; i < NIRQS; i++) {
-    if (irqs & (1 << i) && handlers[i].callback) {
-        handlers[i].callback(i, handlers[i].cookie);
+void isr()
+{
+  const uint32_t irqs = mmio_read32((void *)VIC_BASE_ADDR, VICIRQSTATUS);
+  ;
+  for (uint32_t i = 0; i < NIRQS; i++)
+  {
+    if (irqs & (1 << i) && handlers[i].callback)
+    {
+      handlers[i].callback(i, handlers[i].cookie);
     }
-    }
-    core_enable_irqs();
+  }
 }
 
-void core_enable_irqs() {
+void core_enable_irqs()
+{
   _irqs_enable();
 }
 
-void core_disable_irqs() {
+void core_disable_irqs()
+{
   _irqs_disable();
 }
 
-void core_halt() {
+void core_halt()
+{
   _wfi();
 }
 
@@ -67,27 +73,31 @@ void core_halt() {
  * need to initialize both the hardware and software
  * sides.
  */
-void vic_setup_irqs() {
-    for (uint32_t i = 0; i < NIRQS; i++) {
+void vic_setup_irqs()
+{
+  for (uint32_t i = 0; i < NIRQS; i++)
+  {
     vic_disable_irq(i);
-    }
-    _irqs_setup();
+  }
+  _irqs_setup();
 }
 
 /*
  * Enables the given interrupt at the VIC level.
  */
-void vic_enable_irq(uint32_t irq, void (*callback)(uint32_t, void*), void *cookie) {
-    handlers[irq].callback = callback;
-    handlers[irq].cookie = cookie;
-    mmio_write32((void *) VIC_BASE_ADDR, VICINTENABLE, 1 << irq);
+void vic_enable_irq(uint32_t irq, void (*callback)(uint32_t, void *), void *cookie)
+{
+  handlers[irq].callback = callback;
+  handlers[irq].cookie = cookie;
+  mmio_write32((void *)VIC_BASE_ADDR, VICINTENABLE, 1 << irq);
 }
 
 /*
  * Disables the given interrupt at the VIC level.
  */
-void vic_disable_irq(uint32_t irq) {
-    handlers[irq].callback = 0;
-    handlers[irq].cookie = 0;
-    mmio_write32((void *) VIC_BASE_ADDR, VICINTENABLE, 0 << irq);
+void vic_disable_irq(uint32_t irq)
+{
+  handlers[irq].callback = 0;
+  handlers[irq].cookie = 0;
+  mmio_write32((void *)VIC_BASE_ADDR, VICINTENABLE, 1 << irq);
 }
