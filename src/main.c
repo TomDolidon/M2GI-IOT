@@ -53,6 +53,8 @@ void uart_irq_handler(uint32_t irq, void *cookie)
 
   while (c)
   {
+    if (ring_full())
+      panic();
     ring_put(c);
     uart_receive(UART0, &c);
   }
