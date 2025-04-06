@@ -40,14 +40,12 @@ struct handler handlers[NIRQS];
  * status and call the corresponding handlers.
  */
 void isr() {
-    core_disable_irqs();
     const uint32_t irqs = mmio_read32((void *) VIC_BASE_ADDR, VICIRQSTATUS);;
     for (uint32_t i = 0; i < NIRQS; i++) {
     if (irqs & (1 << i) && handlers[i].callback) {
         handlers[i].callback(i, handlers[i].cookie);
     }
     }
-    core_enable_irqs();
 }
 
 void core_enable_irqs() {
