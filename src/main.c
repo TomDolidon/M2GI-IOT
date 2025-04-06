@@ -50,6 +50,8 @@ void _start(void)
   uarts_init();
   uart_enable(UART0);
 
+  uart_send_string(UART0, "\033[H\033[J >");
+
   vic_setup_irqs();
   vic_enable_irq(UART0_IRQ, uart_irq_handler, NULL);
   for (;;)
