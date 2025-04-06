@@ -185,3 +185,25 @@ void uart_irq_handler(uint32_t irq, void *cookie)
   uart_send(UART0, c);
 }
 ```
+
+## 3 - Character encoding observations
+
+Serial communication sends data as bytes, not as individual characters or symbols.
+
+Different keyboards and character sets encode symbols differently. By pressing some special keyboard key, the board receive the following :
+
+- Rigth arrow : '\033[C' (3 characters)
+- Bottom arrow : '\033[B' (3 characters)
+- Left arrow : '\033[D' (3 characters)
+- Top arrow : '\033[A' (3 characters)
+- French accent "é" : '\303\251' (2 characters)
+- Keyboard touch "Enter": '\r' (1 characters)
+- Return : '\177' (1 characters)
+
+In serial terminals, certain byte sequences are interpreted as commands instead of characters. For exemple "\033[H\033[J" clear the screen. It means that if I write this in the uart, the screen will be cleared. To test this, i add the following line in \_start() :
+
+```c
+  uart_send_string(UART0, "\033[H\033[J >");
+```
+
+The screen is cleared as espected.
