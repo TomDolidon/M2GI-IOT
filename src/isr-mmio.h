@@ -28,7 +28,7 @@
  * and generates an IRQ interrupt to the processor.
  */
 
- // Versatile board doc p 179 
+// Versatile board doc p 179
 
 #define VICIRQSTATUS 0x000
 

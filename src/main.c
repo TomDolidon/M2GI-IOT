@@ -18,8 +18,9 @@
 extern uint32_t irq_stack_top;
 extern uint32_t stack_top;
 
-void check_stacks() {
-  void *memsize = (void*)MEMORY;
+void check_stacks()
+{
+  void *memsize = (void *)MEMORY;
   void *addr;
   addr = &stack_top;
   if (addr >= memsize)
@@ -30,7 +31,8 @@ void check_stacks() {
     panic();
 }
 
-void uart_irq_handler(uint32_t irq, void *cookie) {
+void uart_irq_handler(uint32_t irq, void *cookie)
+{
   char c;
   uart_receive(UART0, &c);
   uart_send(UART0, c);
@@ -41,7 +43,8 @@ void uart_irq_handler(uint32_t irq, void *cookie) {
  * upcalled once the hardware has been setup properly
  * in assembly language, see the startup.s file.
  */
-void _start(void) {
+void _start(void)
+{
   check_stacks();
 
   uarts_init();
@@ -49,12 +52,14 @@ void _start(void) {
 
   vic_setup_irqs();
   vic_enable_irq(UART0_IRQ, uart_irq_handler, NULL);
-  for (;;) {
-      core_halt();
+  for (;;)
+  {
+    core_halt();
   }
 }
 
-void panic() {
-  for(;;)
+void panic()
+{
+  for (;;)
     ;
 }
