@@ -67,14 +67,14 @@ void uart_disable(uint32_t uartno)
  */
 void uart_receive(uint8_t uartno, char *pt)
 {
-  // Retrieve the uart struc to get the given uart adress
   struct uart *uart = &uarts[uartno];
 
-  // while no characters are available (FIFO Empty, UART_RXFE == 1), infinite loop
-  while (mmio_read8(uart->bar, UART_FR) & UART_RXFE)
-    ;
+  if (mmio_read8(uart->bar, UART_FR) & UART_RXFE)
+  {
+    *pt = '\0';
+    return;
+  }
 
-  // read in the uart data register adress the character and store it at pt adress
   *pt = (char)mmio_read8(uart->bar, UART_DR);
 }
 
