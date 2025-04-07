@@ -14,6 +14,7 @@
 #include "main.h"
 #include "uart.h"
 #include "isr.h"
+#include "ring.h"
 
 extern uint32_t irq_stack_top;
 extern uint32_t stack_top;
@@ -31,11 +32,32 @@ void check_stacks()
     panic();
 }
 
+char line[MAX_CHARS];
+uint32_t nchars = 0;
+
+void process_ring()
+{
+  uint8_t code;
+  while (!ring_empty())
+  {
+    code = ring_get();
+    line[nchars++] = (char)code;
+    uart_send(UART0, code);
+  }
+}
+
 void uart_irq_handler(uint32_t irq, void *cookie)
 {
   char c;
   uart_receive(UART0, &c);
-  uart_send(UART0, c);
+
+  while (c)
+  {
+    if (ring_full())
+      panic();
+    ring_put(c);
+    uart_receive(UART0, &c);
+  }
 }
 
 /**
@@ -54,9 +76,16 @@ void _start(void)
 
   vic_setup_irqs();
   vic_enable_irq(UART0_IRQ, uart_irq_handler, NULL);
+
   for (;;)
   {
-    core_halt();
+    process_ring();
+    core_disable_irqs();
+    if (ring_empty())
+    {
+      core_halt();
+    }
+    core_enable_irqs();
   }
 }
 
