@@ -65,33 +65,31 @@ void uart_disable(uint32_t uartno)
  * Receives a character from the given UART and stores it in the given pointer.
  * Blocking call until a character is available in the UART's FIFO queue.
  */
-void uart_receive(uint8_t uartno, char *pt)
+bool_t uart_receive(uint8_t uartno, char *pt)
 {
   struct uart *uart = &uarts[uartno];
 
   if (mmio_read8(uart->bar, UART_FR) & UART_RXFE)
   {
     *pt = '\0';
-    return;
+    return 0;
   }
 
   *pt = (char)mmio_read8(uart->bar, UART_DR);
+  return 1;
 }
 
 /**
  * Receives a character from the given UART and stores it in the given pointer.
  * Blocking call until there is space in the  UART's FIFO queue
  */
-void uart_send(uint8_t uartno, char s)
+bool_t uart_send(uint8_t uartno, char s)
 {
   struct uart *uart = &uarts[uartno];
-
-  // while th fifo is full (UART_TXFF == 1), infinite loop
-  while (mmio_read8(uart->bar, UART_FR) & UART_TXFF)
-    ;
-
-  // then write a character at uart data register adress
+  if (mmio_read8(uart->bar, UART_FR) & UART_TXFF)
+    return 0;
   mmio_write8(uart->bar, UART_DR, s);
+  return 1;
 }
 
 /**

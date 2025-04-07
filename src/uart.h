@@ -31,7 +31,7 @@
  * there is at least one character available in the
  * UART RX FIFO queue.
  */
-void uart_receive(uint8_t uartno, char *pt);
+bool_t uart_receive(uint8_t uartno, char *pt);
 
 /**
  * Write a one-byte character through the given uart,
@@ -40,7 +40,7 @@ void uart_receive(uint8_t uartno, char *pt);
  * until there is room in the UART TX FIFO queue to send
  * the character.
  */
-void uart_send(uint8_t uartno, char s);
+bool_t uart_send(uint8_t uartno, char s);
 
 /**
  * This is a wrapper function, provided for simplicity,
