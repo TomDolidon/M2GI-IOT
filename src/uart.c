@@ -18,28 +18,43 @@
 
 struct uart
 {
-  uint8_t uartno; // the UART numéro
-  void *bar;      // base address register for this UART
+  uint8_t uartno;
+  void *bar;
+  void (*read_listener)(void *cookie);
+  void (*write_listener)(void *cookie);
+  void *cookie;
 };
 
 static struct uart uarts[NUARTS];
 
-static void uart_init(uint32_t uartno, void *bar)
+static struct uart uarts[NUARTS];
+
+static void uart_init_internal(uint8_t no, void *bar)
 {
-  struct uart *uart = &uarts[uartno];
-  uart->uartno = uartno;
+  struct uart *uart = &uarts[no];
+  uart->uartno = no;
   uart->bar = bar;
-  // no hardware initialization necessary
-  // when running on QEMU, the UARTs are
-  // already initialized, as long as we
-  // do not rely on interrupts.
+  uart->read_listener = NULL;
+  uart->write_listener = NULL;
+  uart->cookie = NULL;
 }
 
-void uarts_init()
+void uarts_init(void)
 {
-  uart_init(UART0, UART0_BASE_ADDRESS);
-  uart_init(UART1, UART1_BASE_ADDRESS);
-  uart_init(UART2, UART2_BASE_ADDRESS);
+  uart_init_internal(UART0, (void *)UART0_BASE_ADDRESS);
+  uart_init_internal(UART1, (void *)UART1_BASE_ADDRESS);
+  uart_init_internal(UART2, (void *)UART2_BASE_ADDRESS);
+}
+
+void uart_init(uint8_t no,
+               void (*read_listener)(void *cookie),
+               void (*write_listener)(void *cookie),
+               void *cookie)
+{
+  struct uart *uart = &uarts[no];
+  uart->read_listener = read_listener;
+  uart->write_listener = write_listener;
+  uart->cookie = cookie;
 }
 
 /**

@@ -54,6 +54,11 @@ void uart_send_string(uint8_t uartno, const char *s);
  */
 void uarts_init();
 
+void uart_init(uint8_t no,
+               void (*read_listener)(void *cookie),
+               void (*write_listener)(void *cookie),
+               void *cookie);
+
 /*
  * Enables the UART, identified by the given numéro.
  * Nothing to do on QEMU until we use interrupts...
