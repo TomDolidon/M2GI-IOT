@@ -14,7 +14,6 @@
 #include "main.h"
 #include "uart.h"
 #include "isr.h"
-#include "ring.h"
 
 extern uint32_t irq_stack_top;
 extern uint32_t stack_top;
@@ -32,32 +31,44 @@ void check_stacks()
     panic();
 }
 
-char line[MAX_CHARS];
-uint32_t nchars = 0;
+struct cookie cookie = {
+    .uartno = UART0,
+    .head = 0,
+    .tail = 0,
+    .processing = 0};
 
-void process_ring()
+void write_listener(void *addr)
 {
-  uint8_t code;
-  while (!ring_empty())
+  struct cookie *cookie = addr;
+  write_amap(cookie);
+}
+
+void write_amap(struct cookie *cookie)
+{
+  while (cookie->tail < cookie->head)
   {
-    code = ring_get();
-    line[nchars++] = (char)code;
-    uart_send(UART0, code);
+    uint8_t code = cookie->line[cookie->tail];
+    if (!uart_send(cookie->uartno, code))
+      return;
+    cookie->tail++;
   }
 }
 
-void uart_irq_handler(uint32_t irq, void *cookie)
+void read_listener(void *addr)
 {
-  char c;
-  uart_receive(UART0, &c);
-
-  while (c)
+  struct cookie *cookie = (struct cookie *)addr;
+  uint8_t code;
+  while (!cookie->processing && uart_receive(cookie->uartno, &code))
   {
-    if (ring_full())
-      panic();
-    ring_put(c);
-    uart_receive(UART0, &c);
+    cookie->line[cookie->head++] = (char)code;
+    cookie->processing = (code == '\n');
+    write_amap(cookie);
   }
+  bool_t dropped = 0;
+  while (cookie->processing && uart_receive(cookie->uartno, &code))
+    dropped = 1;
+  // if (dropped)
+  //   panic();
 }
 
 /**
@@ -68,24 +79,16 @@ void uart_irq_handler(uint32_t irq, void *cookie)
 void _start(void)
 {
   check_stacks();
-
   uarts_init();
+  uart_init(UART0, read_listener, write_listener, &cookie);
+
   uart_enable(UART0);
-
   uart_send_string(UART0, "\033[H\033[J >");
-
   vic_setup_irqs();
-  vic_enable_irq(UART0_IRQ, uart_irq_handler, NULL);
-
+  // vic_enable_irq(UART0_IRQ, uart_irq_handler, NULL);
   for (;;)
   {
-    process_ring();
-    core_disable_irqs();
-    if (ring_empty())
-    {
-      core_halt();
-    }
-    core_enable_irqs();
+    core_halt();
   }
 }
 

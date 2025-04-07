@@ -20,6 +20,21 @@
 
 typedef uint8_t bool_t;
 
+#include "ring.h"
+
+struct cookie
+{
+  uint32_t uartno;
+  char line[MAX_CHARS];
+  uint32_t head;
+  uint32_t tail;
+  bool_t processing;
+};
+
+void write_amap(struct cookie *cookie);
+void read_listener(void *cookie);
+void write_listener(void *cookie);
+
 void panic();
 void kprintf(const char *fmt, ...);
 
