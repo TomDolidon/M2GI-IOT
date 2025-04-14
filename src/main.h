@@ -35,6 +35,12 @@ void write_amap(struct cookie *cookie);
 void read_listener(void *cookie);
 void write_listener(void *cookie);
 
+/**
+ * handler passed to isr
+ * if there is bytes in uart, store them in rx ring
+ */
+void uart_irq_handler(void *cookie);
+
 void panic();
 void kprintf(const char *fmt, ...);
 

@@ -69,6 +69,25 @@ void read_listener(void *addr)
     dropped = 1;
   // if (dropped)
   //   panic();
+/**
+ * handler passed to isr
+ * if there is bytes in uart, store them in rx ring
+ */
+void uart_irq_handler(void *cookie)
+{
+  struct uart *uart = (struct uart *)cookie;
+  uint8_t code;
+
+  uart_receive(uart->uartno, (char *)&code);
+
+  while (code != '\0')
+  {
+    if (ring_full(&uart->rx))
+      panic();
+    ring_put(&uart->rx, code);
+
+    uart_receive(uart->uartno, (char *)&code);
+  }
 }
 
 /**
