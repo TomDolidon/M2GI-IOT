@@ -15,6 +15,8 @@
 #ifndef UART_H_
 #define UART_H_
 
+#include "ring.h"
+
 /*
  * Defines the number of available UARTs
  * and their respective numéro.
@@ -24,6 +26,19 @@
 #define UART1 1
 #define UART2 2
 
+struct uart
+{
+    struct ring rx; // reception buffer
+    struct ring tx; // transmission buffer
+    void (*read_listener)(void *cookie);
+    void (*write_listener)(void *cookie);
+    void *cookie;
+    uint8_t uartno;
+    void *bar;
+};
+
+extern struct uart uarts[NUARTS];
+
 /*
  * Receives a one-byte character, which is compatible
  * with ASCII encoding. This function blocks, spinning,
@@ -31,7 +46,7 @@
  * there is at least one character available in the
  * UART RX FIFO queue.
  */
-bool_t uart_receive(uint8_t uartno, char *pt);
+void uart_receive(uint8_t uartno, char *pt);
 
 /**
  * Write a one-byte character through the given uart,
@@ -40,7 +55,7 @@ bool_t uart_receive(uint8_t uartno, char *pt);
  * until there is room in the UART TX FIFO queue to send
  * the character.
  */
-bool_t uart_send(uint8_t uartno, char s);
+void uart_send(uint8_t uartno, char s);
 
 /**
  * This is a wrapper function, provided for simplicity,
@@ -67,5 +82,32 @@ void uart_enable(uint32_t uartno);
  * Nothing to do on QEMU until we use interrupts...
  */
 void uart_disable(uint32_t uartno);
+
+/**
+ * Read a byte in the rx ring if the ring isn't empty
+ */
+bool_t uart_read(uint8_t no, uint8_t *byte);
+
+/**
+ * Write a byte in tx ring of the uart if there is space
+ */
+bool_t uart_write(uint8_t no, uint8_t byte);
+
+/**
+ * Handle reception and transmission buffer process
+ */
+void process_uart(uint8_t no);
+
+/**
+ * Handle reception buffer process
+ * If there is bytes in reception buffer, call to read_listener
+ */
+void process_rx_ring(struct uart *uart);
+
+/**
+ * Handle reception buffer process
+ * If there is bytes in transmission buffer, call to write_listener
+ */
+void process_tx_ring(struct uart *uart);
 
 #endif /* UART_H_ */

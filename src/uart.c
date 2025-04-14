@@ -15,20 +15,9 @@
 #include "main.h"
 #include "uart.h"
 #include "uart-mmio.h"
-#include "ring.h"
+#include "isr.h"
 
-struct uart
-{
-  struct ring rx; // recpetion buffer
-  struct ring tx; // transmission buffer
-  void (*read_listener)(void *cookie);
-  void (*write_listener)(void *cookie);
-  void *cookie;
-  uint8_t uartno;
-  void *bar;
-};
-
-static struct uart uarts[NUARTS];
+struct uart uarts[NUARTS];
 
 void uart_init(uint8_t no,
                void (*rl)(void *cookie),
@@ -72,31 +61,33 @@ void uart_disable(uint32_t uartno)
  * Receives a character from the given UART and stores it in the given pointer.
  * Blocking call until a character is available in the UART's FIFO queue.
  */
-bool_t uart_receive(uint8_t uartno, char *pt)
+void uart_receive(uint8_t uartno, char *pt)
 {
   struct uart *uart = &uarts[uartno];
 
   if (mmio_read8(uart->bar, UART_FR) & UART_RXFE)
   {
     *pt = '\0';
-    return 0;
+    return;
   }
 
   *pt = (char)mmio_read8(uart->bar, UART_DR);
-  return 1;
 }
 
 /**
  * Receives a character from the given UART and stores it in the given pointer.
  * Blocking call until there is space in the  UART's FIFO queue
  */
-bool_t uart_send(uint8_t uartno, char s)
+void uart_send(uint8_t uartno, char s)
 {
   struct uart *uart = &uarts[uartno];
-  if (mmio_read8(uart->bar, UART_FR) & UART_TXFF)
-    return 0;
+
+  // while th fifo is full (UART_TXFF == 1), infinite loop
+  while (mmio_read8(uart->bar, UART_FR) & UART_TXFF)
+    ;
+
+  // then write a character at uart data register adress
   mmio_write8(uart->bar, UART_DR, s);
-  return 1;
 }
 
 /**
@@ -109,5 +100,67 @@ void uart_send_string(uint8_t uartno, const char *s)
   {
     uart_send(uartno, *s);
     s++;
+  }
+}
+
+/**
+ * Read a byte in the rx ring if the ring isn't empty
+ */
+bool_t uart_read(uint8_t no, uint8_t *byte)
+{
+  struct uart *uart = &uarts[no];
+
+  if (ring_empty(&uart->rx))
+    return false;
+  *byte = ring_get(&uart->rx);
+
+  return true;
+}
+
+/**
+ * Write a byte in tx ring of the uart if there is space
+ */
+bool_t uart_write(uint8_t no, uint8_t byte)
+{
+  struct uart *uart = &uarts[no];
+  if (ring_full(&uart->tx))
+    return false;
+
+  ring_put(&uart->tx, byte);
+
+  return true;
+}
+
+/**
+ * Handle reception and transmission buffer process
+ */
+void process_uart(uint8_t no)
+{
+  struct uart *uart = &uarts[no];
+  process_rx_ring(uart);
+  process_tx_ring(uart);
+}
+
+/**
+ * Handle reception buffer process
+ * If there is bytes in reception buffer, call to read_listener
+ */
+void process_rx_ring(struct uart *uart)
+{
+  if (!ring_empty(&uart->rx))
+  {
+    uart->read_listener(uart->cookie);
+  }
+}
+
+/**
+ * Handle reception buffer process
+ * If there is bytes in transmission buffer, call to write_listener
+ */
+void process_tx_ring(struct uart *uart)
+{
+  if (!ring_empty(&uart->tx))
+  {
+    uart->write_listener((void *)uart);
   }
 }
