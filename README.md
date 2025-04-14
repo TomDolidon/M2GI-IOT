@@ -87,12 +87,15 @@ Inside GDB, connect to QEMU:
 ↳ 📂 docs -> contain all documentation
 ↳ 📂 src
     ↳ 📄 exception.s -> exception handling for processor
-    ↳ 📄 main.c -> code entry point
-    ↳ 📄 main.h -> utility function to read and write at specifi address
     ↳ 📄 startup.s -> initialize the system then call _start() in main.c
+    ↳ 📄 irq.s -> handle interrupt on the processor
+    ↳ 📄 main.c -> code entry point
+    ↳ 📄 main.h -> utility function to read and write at specific address
     ↳ 📄 uart-mmio.h -> constants for using uart
-    ↳ 📄 uart.c -> uart functions
-    ↳ 📄 uart.h -> uart definitions
+    ↳ 📄 uart.c & uart.h -> uart functions & definitions
+    ↳ 📄 isr-mmio.h.h -> constants for using isr
+    ↳ 📄 isr.c and isr.h -> isr function and definition
+    ↳ 📄 ring.c and ring.h -> define ring structure and utility functions to use rings
 ```
 
 ## 📝 Documentation
