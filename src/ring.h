@@ -1,38 +1,22 @@
-#ifndef RING_H
-#define RING_H
+#ifndef RING_H_
+#define RING_H_
 
-#include "main.h"
+#include <stdint.h>
+#include <stdbool.h>
 
-#define MAX_CHARS 512
-volatile uint32_t tail = 0;
-volatile uint8_t buffer[MAX_CHARS];
-volatile uint32_t head = 0;
+#define MAX_CHARS 1024
 
-bool_t ring_empty()
+struct ring
 {
-    return (head == tail);
-}
+    volatile uint8_t buffer[MAX_CHARS];
+    volatile uint32_t head;
+    volatile uint32_t tail;
+};
 
-bool_t ring_full()
-{
-    int next = (head + 1) % MAX_CHARS;
-    return (next == tail);
-}
+void ring_init(struct ring *ring);
+bool_t ring_empty(const struct ring *ring);
+bool_t ring_full(const struct ring *ring);
+void ring_put(struct ring *ring, uint8_t bits);
+uint8_t ring_get(struct ring *ring);
 
-void ring_put(uint8_t bits)
-{
-    uint32_t next = (head + 1) % MAX_CHARS;
-    buffer[head] = bits;
-    head = next;
-}
-
-uint8_t ring_get()
-{
-    uint8_t bits;
-    uint32_t next = (tail + 1) % MAX_CHARS;
-    bits = buffer[tail];
-    tail = next;
-    return bits;
-}
-
-#endif
+#endif // RING_H_

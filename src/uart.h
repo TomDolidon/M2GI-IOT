@@ -15,6 +15,8 @@
 #ifndef UART_H_
 #define UART_H_
 
+#include "ring.h"
+
 /*
  * Defines the number of available UARTs
  * and their respective numéro.
@@ -23,6 +25,19 @@
 #define UART0 0
 #define UART1 1
 #define UART2 2
+
+struct uart
+{
+    struct ring rx; // reception buffer
+    struct ring tx; // transmission buffer
+    void (*read_listener)(void *cookie);
+    void (*write_listener)(void *cookie);
+    void *cookie;
+    uint8_t uartno;
+    void *bar;
+};
+
+extern struct uart uarts[NUARTS];
 
 /*
  * Receives a one-byte character, which is compatible
@@ -49,10 +64,11 @@ void uart_send(uint8_t uartno, char s);
  */
 void uart_send_string(uint8_t uartno, const char *s);
 
-/*
- * Global initialization for all the UARTs
- */
-void uarts_init();
+void uart_init(uint8_t no,
+               void (*read_listener)(void *cookie),
+               void (*write_listener)(void *cookie),
+               void *cookie,
+               void *bar);
 
 /*
  * Enables the UART, identified by the given numéro.
@@ -66,5 +82,32 @@ void uart_enable(uint32_t uartno);
  * Nothing to do on QEMU until we use interrupts...
  */
 void uart_disable(uint32_t uartno);
+
+/**
+ * Read a byte in the rx ring if the ring isn't empty
+ */
+bool_t uart_read(uint8_t no, uint8_t *byte);
+
+/**
+ * Write a byte in tx ring of the uart if there is space
+ */
+bool_t uart_write(uint8_t no, uint8_t byte);
+
+/**
+ * Handle reception and transmission buffer process
+ */
+void process_uart(uint8_t no);
+
+/**
+ * Handle reception buffer process
+ * If there is bytes in reception buffer, call to read_listener
+ */
+void process_rx_ring(struct uart *uart);
+
+/**
+ * Handle reception buffer process
+ * If there is bytes in transmission buffer, call to write_listener
+ */
+void process_tx_ring(struct uart *uart);
 
 #endif /* UART_H_ */

@@ -21,7 +21,7 @@ DEBUG?=yes
 BUILD=build/
 SRC=src/
 
-objs= startup.o main.o exception.o uart.o isr.o irq.o
+objs= startup.o main.o exception.o uart.o isr.o irq.o ring.o
 
 #===================================================================
 # This is the non-configurable part of the makefile,

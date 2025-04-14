@@ -20,6 +20,36 @@
 
 typedef uint8_t bool_t;
 
+struct cookie
+{
+  uint32_t uartno;
+  char line[512];
+  uint32_t head;
+  uint32_t tail;
+  bool_t processing;
+};
+
+/**
+ * Write as much as possible bytes in tx ring
+ */
+void write_amap(struct cookie *cookie);
+
+/**
+ * Uart read listener, while there is bytes in rx rings, call to write amap
+ */
+void read_listener(void *cookie);
+
+/**
+ * Uart write_listener, while the uart tx ring is not empty, send bytes to uart
+ */
+void write_listener(void *cookie);
+
+/**
+ * handler passed to isr
+ * if there is bytes in uart, store them in rx ring
+ */
+void uart_irq_handler(void *cookie);
+
 void panic();
 void kprintf(const char *fmt, ...);
 

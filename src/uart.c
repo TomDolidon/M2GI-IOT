@@ -15,31 +15,27 @@
 #include "main.h"
 #include "uart.h"
 #include "uart-mmio.h"
+#include "isr.h"
 
-struct uart
+struct uart uarts[NUARTS];
+
+void uart_init(uint8_t no,
+               void (*rl)(void *cookie),
+               void (*wl)(void *cookie),
+               void *cookie,
+               void *bar)
 {
-  uint8_t uartno; // the UART numéro
-  void *bar;      // base address register for this UART
-};
-
-static struct uart uarts[NUARTS];
-
-static void uart_init(uint32_t uartno, void *bar)
-{
-  struct uart *uart = &uarts[uartno];
-  uart->uartno = uartno;
+  struct uart *uart = &uarts[no];
+  uart->uartno = no;
   uart->bar = bar;
-  // no hardware initialization necessary
-  // when running on QEMU, the UARTs are
-  // already initialized, as long as we
-  // do not rely on interrupts.
-}
+  uart->read_listener = rl;
+  uart->write_listener = wl;
+  uart->cookie = cookie;
 
-void uarts_init()
-{
-  uart_init(UART0, UART0_BASE_ADDRESS);
-  uart_init(UART1, UART1_BASE_ADDRESS);
-  uart_init(UART2, UART2_BASE_ADDRESS);
+  ring_init(&uart->rx);
+  ring_init(&uart->tx);
+
+  uart_enable(no);
 }
 
 /**
@@ -104,5 +100,67 @@ void uart_send_string(uint8_t uartno, const char *s)
   {
     uart_send(uartno, *s);
     s++;
+  }
+}
+
+/**
+ * Read a byte in the rx ring if the ring isn't empty
+ */
+bool_t uart_read(uint8_t no, uint8_t *byte)
+{
+  struct uart *uart = &uarts[no];
+
+  if (ring_empty(&uart->rx))
+    return false;
+  *byte = ring_get(&uart->rx);
+
+  return true;
+}
+
+/**
+ * Write a byte in tx ring of the uart if there is space
+ */
+bool_t uart_write(uint8_t no, uint8_t byte)
+{
+  struct uart *uart = &uarts[no];
+  if (ring_full(&uart->tx))
+    return false;
+
+  ring_put(&uart->tx, byte);
+
+  return true;
+}
+
+/**
+ * Handle reception and transmission buffer process
+ */
+void process_uart(uint8_t no)
+{
+  struct uart *uart = &uarts[no];
+  process_rx_ring(uart);
+  process_tx_ring(uart);
+}
+
+/**
+ * Handle reception buffer process
+ * If there is bytes in reception buffer, call to read_listener
+ */
+void process_rx_ring(struct uart *uart)
+{
+  if (!ring_empty(&uart->rx))
+  {
+    uart->read_listener(uart->cookie);
+  }
+}
+
+/**
+ * Handle reception buffer process
+ * If there is bytes in transmission buffer, call to write_listener
+ */
+void process_tx_ring(struct uart *uart)
+{
+  if (!ring_empty(&uart->tx))
+  {
+    uart->write_listener((void *)uart);
   }
 }
