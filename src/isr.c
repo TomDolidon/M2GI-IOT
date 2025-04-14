@@ -29,7 +29,7 @@ extern void _wfi(void);
  */
 struct handler
 {
-  void (*callback)(uint32_t, void *);
+  void (*callback)(void *);
   void *cookie;
 };
 
@@ -43,12 +43,12 @@ struct handler handlers[NIRQS];
 void isr()
 {
   const uint32_t irqs = mmio_read32((void *)VIC_BASE_ADDR, VICIRQSTATUS);
-  ;
+
   for (uint32_t i = 0; i < NIRQS; i++)
   {
     if (irqs & (1 << i) && handlers[i].callback)
     {
-      handlers[i].callback(i, handlers[i].cookie);
+      handlers[i].callback(handlers[i].cookie);
     }
   }
 }
@@ -85,7 +85,7 @@ void vic_setup_irqs()
 /*
  * Enables the given interrupt at the VIC level.
  */
-void vic_enable_irq(uint32_t irq, void (*callback)(uint32_t, void *), void *cookie)
+void vic_enable_irq(uint32_t irq, void (*callback)(void *), void *cookie)
 {
   handlers[irq].callback = callback;
   handlers[irq].cookie = cookie;
@@ -99,5 +99,5 @@ void vic_disable_irq(uint32_t irq)
 {
   handlers[irq].callback = 0;
   handlers[irq].cookie = 0;
-  mmio_write32((void *)VIC_BASE_ADDR, VICINTENABLE, 1 << irq);
+  mmio_write32((void *)VIC_BASE_ADDR, VICINTCLEAR, 1 << irq);
 }
