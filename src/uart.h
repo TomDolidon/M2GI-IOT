@@ -49,15 +49,11 @@ bool_t uart_send(uint8_t uartno, char s);
  */
 void uart_send_string(uint8_t uartno, const char *s);
 
-/*
- * Global initialization for all the UARTs
- */
-void uarts_init();
-
 void uart_init(uint8_t no,
                void (*read_listener)(void *cookie),
                void (*write_listener)(void *cookie),
-               void *cookie);
+               void *cookie,
+               void *bar);
 
 /*
  * Enables the UART, identified by the given numéro.

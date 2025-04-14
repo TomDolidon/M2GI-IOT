@@ -15,46 +15,38 @@
 #include "main.h"
 #include "uart.h"
 #include "uart-mmio.h"
+#include "ring.h"
 
 struct uart
 {
-  uint8_t uartno;
-  void *bar;
+  struct ring rx; // recpetion buffer
+  struct ring tx; // transmission buffer
   void (*read_listener)(void *cookie);
   void (*write_listener)(void *cookie);
   void *cookie;
+  uint8_t uartno;
+  void *bar;
 };
 
 static struct uart uarts[NUARTS];
 
-static struct uart uarts[NUARTS];
-
-static void uart_init_internal(uint8_t no, void *bar)
+void uart_init(uint8_t no,
+               void (*rl)(void *cookie),
+               void (*wl)(void *cookie),
+               void *cookie,
+               void *bar)
 {
   struct uart *uart = &uarts[no];
   uart->uartno = no;
   uart->bar = bar;
-  uart->read_listener = NULL;
-  uart->write_listener = NULL;
-  uart->cookie = NULL;
-}
-
-void uarts_init(void)
-{
-  uart_init_internal(UART0, (void *)UART0_BASE_ADDRESS);
-  uart_init_internal(UART1, (void *)UART1_BASE_ADDRESS);
-  uart_init_internal(UART2, (void *)UART2_BASE_ADDRESS);
-}
-
-void uart_init(uint8_t no,
-               void (*read_listener)(void *cookie),
-               void (*write_listener)(void *cookie),
-               void *cookie)
-{
-  struct uart *uart = &uarts[no];
-  uart->read_listener = read_listener;
-  uart->write_listener = write_listener;
+  uart->read_listener = rl;
+  uart->write_listener = wl;
   uart->cookie = cookie;
+
+  ring_init(&uart->rx);
+  ring_init(&uart->tx);
+
+  uart_enable(no);
 }
 
 /**
