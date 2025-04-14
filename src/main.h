@@ -33,6 +33,10 @@ struct cookie
 
 void write_amap(struct cookie *cookie);
 void read_listener(void *cookie);
+
+/**
+ * Uart write_listener, while the uart tx ring is not empty, send bytes to uart
+ */
 void write_listener(void *cookie);
 
 /**

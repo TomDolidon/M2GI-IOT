@@ -37,10 +37,18 @@ struct cookie cookie = {
     .tail = 0,
     .processing = 0};
 
+/**
+ * Uart write_listener, while the uart tx ring is not empty, send bytes to uart
+ */
 void write_listener(void *addr)
 {
-  struct cookie *cookie = addr;
-  write_amap(cookie);
+  struct uart *uart = (struct uart *)addr;
+
+  while (!ring_empty(&uart->tx))
+  {
+    uint8_t code = ring_get(&uart->tx);
+    uart_send(uart->uartno, code);
+  }
 }
 
 void write_amap(struct cookie *cookie)
