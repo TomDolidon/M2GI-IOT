@@ -61,3 +61,172 @@ void process_ring()
   }
 }
 ```
+
+## 2 - Using listeners
+
+We want now to move to an event-driven model, where callbacks (listeners) are invoked as soon as an event occurs:
+
+- Read listener: called as soon as bytes are available in the receive (RX) buffer.
+- Write listener: called when there is space available to write in the transmit (TX) buffer.
+
+To handle this, the idea is to use two ring buffers (one for reception and one for transmission) within a structure associated with the UART, along with an initialization function that allows you to provide the callbacks and a cookie (application-specific data).
+
+### 1 - Init uart
+
+We extends the uart structure by adding two rings (rx and tx) and two functions (read and write listeners) :
+
+```c
+struct uart
+{
+    struct ring rx; // reception buffer
+    struct ring tx; // transmission buffer
+    void (*read_listener)(void *cookie);
+    void (*write_listener)(void *cookie);
+    void *cookie;
+    uint8_t uartno;
+    void *bar;
+};
+```
+
+Then we update the uart init function to take in consideration the new structure :
+
+```c
+void uart_init(uint8_t no,
+               void (*rl)(void *cookie),
+               void (*wl)(void *cookie),
+               void *cookie,
+               void *bar)
+{
+  struct uart *uart = &uarts[no];
+  uart->uartno = no;
+  uart->bar = bar;
+  uart->read_listener = rl;
+  uart->write_listener = wl;
+  uart->cookie = cookie;
+
+  ring_init(&uart->rx);
+  ring_init(&uart->tx);
+
+  uart_enable(no);
+}
+```
+
+### 2 - irq handler :
+
+Our irq handler doesn't change so much, we just retrieve uart from cookie and put received byte in rx ring
+
+```c
+void uart_irq_handler(void *cookie)
+{
+  struct uart *uart = (struct uart *)cookie;
+  uint8_t code;
+
+  uart_receive(uart->uartno, (char *)&code);
+
+  while (code != '\0')
+  {
+    if (ring_full(&uart->rx))
+      panic();
+    ring_put(&uart->rx, code);
+
+    uart_receive(uart->uartno, (char *)&code);
+  }
+}
+```
+
+### 3 - Listeners
+
+We now have to implement our two listeners, the read listner will read in the tx ring, if it finds bytes, it will writes in the tx ring by calling write_amap() function.
+
+```c
+void read_listener(void *addr)
+{
+  struct cookie *cookie = (struct cookie *)addr;
+  uint8_t code;
+  while (!cookie->processing && uart_read(cookie->uartno, &code))
+  {
+    cookie->line[cookie->head++] = (char)code;
+    cookie->processing = (code == '\n');
+    write_amap(cookie);
+  }
+  bool_t dropped = 0;
+  while (cookie->processing && uart_read(cookie->uartno, &code))
+    dropped = 1;
+  if (dropped)
+    panic();
+}
+```
+
+While the write listener will read the tx ring, and if there is available bytes it will send it to the uart
+
+```c
+void write_listener(void *addr)
+{
+  struct uart *uart = (struct uart *)addr;
+
+  while (!ring_empty(&uart->tx))
+  {
+    uint8_t code = ring_get(&uart->tx);
+    uart_send(uart->uartno, code);
+  }
+}
+```
+
+NB: I'm not sure about my write_listener usage, in the lecture provided in class, the write_listener is used to write in the tx ring
+
+### 4 - Putting it all together in main & process rings
+
+We now need to call our listners somewhere, for that, i created two functions: process_rx_ring and process_tx_ring :
+
+```c
+void process_rx_ring(struct uart *uart)
+{
+  if (!ring_empty(&uart->rx))
+  {
+    uart->read_listener(uart->cookie);
+  }
+}
+
+void process_tx_ring(struct uart *uart)
+{
+  if (!ring_empty(&uart->tx))
+  {
+    uart->write_listener((void *)uart);
+  }
+}
+```
+
+process_rx_ring call to the uart read listener and process_tx_ring call to the write listener, both functions are called in process_uart() :
+
+```c
+void process_uart(uint8_t no)
+{
+  struct uart *uart = &uarts[no];
+  process_rx_ring(uart);
+  process_tx_ring(uart);
+}
+```
+
+Then we jsut have to put all of this in our entry point :
+
+```c
+void _start(void)
+{
+  check_stacks();
+
+  uart_init(UART0, read_listener, write_listener, &uart0_cookie, (void *)UART0_BASE_ADDRESS); // Setup our uart0 with write and read listeners, and cookie
+
+  uart_send_string(UART0, "\033[H\033[J >");
+
+  vic_setup_irqs();
+  vic_enable_irq(UART0_IRQ, uart_irq_handler, &uarts[UART0]); // enable interruption for uart0
+
+  for (;;)
+  {
+    core_disable_irqs();
+    process_uart(UART0); // process tx and rx rings, then called each time an interrupt is raised
+    core_halt(); // Wait for interrupt
+    core_enable_irqs();
+  }
+}
+```
