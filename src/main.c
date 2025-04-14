@@ -51,32 +51,40 @@ void write_listener(void *addr)
   }
 }
 
+/**
+ * Write as much as possible bytes in tx ring
+ */
 void write_amap(struct cookie *cookie)
 {
   while (cookie->tail < cookie->head)
   {
     uint8_t code = cookie->line[cookie->tail];
-    if (!uart_send(cookie->uartno, code))
+    if (!uart_write(cookie->uartno, code))
       return;
     cookie->tail++;
   }
 }
 
+/**
+ * Uart read listener, while there is bytes in rx rings, call to write amap
+ */
 void read_listener(void *addr)
 {
   struct cookie *cookie = (struct cookie *)addr;
   uint8_t code;
-  while (!cookie->processing && uart_receive(cookie->uartno, &code))
+  while (!cookie->processing && uart_read(cookie->uartno, &code))
   {
     cookie->line[cookie->head++] = (char)code;
     cookie->processing = (code == '\n');
     write_amap(cookie);
   }
   bool_t dropped = 0;
-  while (cookie->processing && uart_receive(cookie->uartno, &code))
+  while (cookie->processing && uart_read(cookie->uartno, &code))
     dropped = 1;
-  // if (dropped)
-  //   panic();
+  if (dropped)
+    panic();
+}
+
 /**
  * handler passed to isr
  * if there is bytes in uart, store them in rx ring

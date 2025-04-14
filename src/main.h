@@ -31,7 +31,14 @@ struct cookie
   bool_t processing;
 };
 
+/**
+ * Write as much as possible bytes in tx ring
+ */
 void write_amap(struct cookie *cookie);
+
+/**
+ * Uart read listener, while there is bytes in rx rings, call to write amap
+ */
 void read_listener(void *cookie);
 
 /**
