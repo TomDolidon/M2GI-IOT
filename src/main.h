@@ -20,12 +20,10 @@
 
 typedef uint8_t bool_t;
 
-#include "ring.h"
-
 struct cookie
 {
   uint32_t uartno;
-  char line[MAX_CHARS];
+  char line[512];
   uint32_t head;
   uint32_t tail;
   bool_t processing;

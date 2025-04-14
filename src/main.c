@@ -14,6 +14,8 @@
 #include "main.h"
 #include "uart.h"
 #include "isr.h"
+#include "ring.h"
+#include "uart-mmio.h"
 
 extern uint32_t irq_stack_top;
 extern uint32_t stack_top;
@@ -31,7 +33,7 @@ void check_stacks()
     panic();
 }
 
-struct cookie cookie = {
+struct cookie uart0_cookie = {
     .uartno = UART0,
     .head = 0,
     .tail = 0,
@@ -114,16 +116,20 @@ void uart_irq_handler(void *cookie)
 void _start(void)
 {
   check_stacks();
-  uarts_init();
-  uart_init(UART0, read_listener, write_listener, &cookie);
 
-  uart_enable(UART0);
+  uart_init(UART0, read_listener, write_listener, &uart0_cookie, (void *)UART0_BASE_ADDRESS);
+
   uart_send_string(UART0, "\033[H\033[J >");
+
   vic_setup_irqs();
-  // vic_enable_irq(UART0_IRQ, uart_irq_handler, NULL);
+  vic_enable_irq(UART0_IRQ, uart_irq_handler, &uarts[UART0]);
+
   for (;;)
   {
+    core_disable_irqs();
+    process_uart(UART0);
     core_halt();
+    core_enable_irqs();
   }
 }
 
